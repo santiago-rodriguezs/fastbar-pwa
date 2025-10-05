@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Clock, Sun, Wallet } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 
-export default function OrderDetailPage({ params }: { params: { orderId: string } }) {
+export default function OrderDetailPage({ params }: { params: { id: string } }) {
   const [timeRemaining, setTimeRemaining] = useState(15 * 60)
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function OrderDetailPage({ params }: { params: { orderId: string 
             </Link>
           </Button>
           <div>
-            <h1 className="text-lg font-semibold">Orden {params.orderId}</h1>
+            <h1 className="text-lg font-semibold">Orden {params.id}</h1>
             <p className="text-xs text-muted-foreground">Noche Electrónica</p>
           </div>
         </div>
@@ -42,7 +42,7 @@ export default function OrderDetailPage({ params }: { params: { orderId: string 
       <main className="flex-1 px-6 py-8">
         <div className="flex flex-col items-center">
           <div className="mb-4 rounded-2xl bg-white p-8 shadow-lg">
-            <QRCodeSVG value={`FASTBAR:${params.orderId}:8472`} size={240} level="H" includeMargin={false} />
+            <QRCodeSVG value={`FASTBAR:${params.id}:8472`} size={240} level="H" includeMargin={false} />
           </div>
 
           <Badge variant="outline" className="mb-4 border-primary/50 bg-primary/10 text-primary">

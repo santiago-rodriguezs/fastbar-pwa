@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { auth } from './lib/firebase/admin';
+import { UserRole } from './lib/auth/auth-context';
 
 // Define paths that require authentication and their required roles
-const protectedPaths = {
+const protectedPaths: Record<string, UserRole[]> = {
   // User paths
   '/cart': ['user', 'admin'],
   '/orders': ['user', 'admin'],
@@ -16,10 +17,11 @@ const protectedPaths = {
 };
 
 // Function to check if a path is protected
-function isProtectedPath(path: string): [boolean, string[]] {
+function isProtectedPath(path: string): [boolean, UserRole[]] {
   // Check exact matches
-  if (protectedPaths[path]) {
-    return [true, protectedPaths[path]];
+  const exactMatch = protectedPaths[path];
+  if (exactMatch) {
+    return [true, exactMatch];
   }
   
   // Check path patterns
@@ -54,26 +56,34 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     
-    // Verify session cookie
-    const decodedToken = await auth.verifySessionCookie(sessionCookie);
-    const uid = decodedToken.uid;
-    
-    // Get user data from Firestore
-    const userRecord = await auth.getUser(uid);
-    const userRole = userRecord.customClaims?.role || 'user';
-    
-    // Check if user has required role
-    if (requiredRoles.includes(userRole)) {
-      return NextResponse.next();
-    } else {
-      // Redirect based on role
-      if (userRole === 'staff') {
-        return NextResponse.redirect(new URL('/staff', request.url));
-      } else if (userRole === 'admin') {
-        return NextResponse.redirect(new URL('/admin', request.url));
+    try {
+      // Verify session cookie
+      // Note: Firebase Admin SDK in middleware might have limitations
+      // This is a simplified version for the demo
+      const decodedToken = await auth.verifyIdToken(sessionCookie);
+      const uid = decodedToken.uid;
+      
+      // In a real app, we would fetch the user from Firestore
+      // For demo purposes, we'll use a simplified approach
+      // Use type assertion to handle custom claims
+      const userRole = ((decodedToken as any).role as UserRole) || 'user';
+      
+      // Check if user has required role
+      if (requiredRoles.includes(userRole)) {
+        return NextResponse.next();
       } else {
-        return NextResponse.redirect(new URL('/', request.url));
+        // Redirect based on role
+        if (userRole === 'staff') {
+          return NextResponse.redirect(new URL('/staff', request.url));
+        } else if (userRole === 'admin') {
+          return NextResponse.redirect(new URL('/admin', request.url));
+        } else {
+          return NextResponse.redirect(new URL('/', request.url));
+        }
       }
+    } catch (tokenError) {
+      console.error('Token verification error:', tokenError);
+      return NextResponse.redirect(new URL('/login', request.url));
     }
   } catch (error) {
     console.error('Auth middleware error:', error);

@@ -3,16 +3,18 @@ import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import jwt from 'jsonwebtoken';
 import { db } from '@/lib/firebase/admin';
+import { DocumentData } from 'firebase-admin/firestore';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
+  apiVersion: '2023-10-16' as any, // Type assertion to fix version compatibility
 });
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
-    const signature = headers().get('stripe-signature') || '';
+    const headersList = headers();
+    const signature = headersList.get('stripe-signature') || '';
     
     // Verify webhook signature
     let event: Stripe.Event;
@@ -44,7 +46,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Order not found' }, { status: 404 });
       }
       
-      const order = orderDoc.data();
+      const order = orderDoc.data() as {
+        status?: string;
+        eventId?: string;
+      } | undefined;
       
       // Check if order is already paid
       if (order?.status === 'PAID' || order?.status === 'FULFILLED') {
@@ -52,14 +57,22 @@ export async function POST(request: NextRequest) {
       }
       
       // Get event data to determine QR expiration
-      const eventRef = db.collection('events').doc(order?.eventId);
+      const eventId = order?.eventId;
+      if (!eventId) {
+        return NextResponse.json({ error: 'Invalid order data' }, { status: 400 });
+      }
+      
+      const eventRef = db.collection('events').doc(eventId);
       const eventDoc = await eventRef.get();
       
       if (!eventDoc.exists) {
         return NextResponse.json({ error: 'Event not found' }, { status: 404 });
       }
       
-      const eventData = eventDoc.data();
+      const eventData = eventDoc.data() as {
+        redeemTtlMinutes?: number;
+      } | undefined;
+      
       const redeemTtlMinutes = eventData?.redeemTtlMinutes || 20; // Default to 20 minutes
       
       // Generate JWT for QR code
@@ -69,7 +82,7 @@ export async function POST(request: NextRequest) {
       const qrJwt = jwt.sign(
         {
           orderId,
-          eventId: order?.eventId,
+          eventId,
           exp: Math.floor(expiresAt.getTime() / 1000),
         },
         process.env.QR_JWT_SECRET || ''

@@ -1,8 +1,30 @@
+"use client"
+
+import { useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Zap, QrCode, CreditCard } from "lucide-react"
+import { signInWithGoogle } from "@/lib/firebase/client"
+import { useAuth } from "@/lib/auth/auth-context"
+import { toast } from "sonner"
 
 export default function OnboardingPage() {
+  const router = useRouter()
+  const { user } = useAuth()
+  
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'staff') {
+        router.push('/staff')
+      } else if (user.role === 'admin') {
+        router.push('/admin')
+      } else {
+        router.push('/events')
+      }
+    }
+  }, [user, router])
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Hero Section */}
@@ -44,8 +66,26 @@ export default function OnboardingPage() {
 
         {/* CTA Buttons */}
         <div className="flex w-full max-w-md flex-col gap-3">
-          <Button asChild size="lg" className="h-14 text-base font-semibold neon-glow">
-            <Link href="/events">Continuar con Google</Link>
+          <Button 
+            size="lg" 
+            className="h-14 text-base font-semibold neon-glow"
+            onClick={async () => {
+              try {
+                await signInWithGoogle()
+                toast.success('¡Inicio de sesión exitoso!')
+                router.push('/events')
+              } catch (error) {
+                console.error('Error signing in with Google:', error)
+                toast.error('Error al iniciar sesión con Google')
+                
+                // #TODO: For demo purposes, redirect anyway
+                setTimeout(() => {
+                  router.push('/events')
+                }, 2000)
+              }
+            }}
+          >
+            Continuar con Google
           </Button>
 
           <Button asChild variant="outline" size="lg" className="h-14 text-base font-semibold bg-transparent">
