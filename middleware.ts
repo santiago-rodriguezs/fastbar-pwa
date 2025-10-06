@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from './lib/firebase/admin';
 import { UserRole } from './lib/auth/auth-context';
+import { jwtVerify } from 'jose';
 
 // Define paths that require authentication and their required roles
 const protectedPaths: Record<string, UserRole[]> = {
@@ -57,16 +57,13 @@ export async function middleware(request: NextRequest) {
     }
     
     try {
-      // Verify session cookie
-      // Note: Firebase Admin SDK in middleware might have limitations
-      // This is a simplified version for the demo
-      const decodedToken = await auth.verifyIdToken(sessionCookie);
-      const uid = decodedToken.uid;
+      // Verify JWT token
+      // This is a simplified version that works in Edge Runtime
+      const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'default_secret_for_development');
+      const { payload } = await jwtVerify(sessionCookie, secret);
       
-      // In a real app, we would fetch the user from Firestore
-      // For demo purposes, we'll use a simplified approach
-      // Use type assertion to handle custom claims
-      const userRole = ((decodedToken as any).role as UserRole) || 'user';
+      // Extract user role from payload
+      const userRole = (payload.role as UserRole) || 'user';
       
       // Check if user has required role
       if (requiredRoles.includes(userRole)) {
@@ -88,7 +85,7 @@ export async function middleware(request: NextRequest) {
   } catch (error) {
     console.error('Auth middleware error:', error);
     
-    // #TODO: For demo purposes, allow access to protected routes
+    // For demo purposes, allow access to protected routes in development
     if (process.env.NODE_ENV !== 'production') {
       console.log('Demo mode: Allowing access to protected route');
       return NextResponse.next();

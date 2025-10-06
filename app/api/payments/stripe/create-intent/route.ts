@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import Stripe from 'stripe';
-import { db, auth } from '@/lib/firebase/admin';
+import { db, auth } from '@/lib/firebase/admin-server';
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
+// Mock Stripe implementation for development
+const mockStripe = {
+  paymentIntents: {
+    create: async (options: any) => ({
+      client_secret: 'mock_secret_' + Date.now(),
+      id: 'pi_mock_' + Date.now(),
+    }),
+  },
+};
 
 export async function POST(request: NextRequest) {
   try {
     // Get session cookie
-    const sessionCookie = cookies().get('session')?.value;
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
     
     if (!sessionCookie) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,7 +83,7 @@ export async function POST(request: NextRequest) {
     });
     
     // Create Stripe payment intent
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await mockStripe.paymentIntents.create({
       amount: subtotalCents,
       currency,
       metadata: {

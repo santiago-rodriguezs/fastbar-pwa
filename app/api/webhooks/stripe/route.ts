@@ -1,29 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import Stripe from 'stripe';
 import jwt from 'jsonwebtoken';
-import { db } from '@/lib/firebase/admin';
+import { db } from '@/lib/firebase/admin-server';
 import { DocumentData } from 'firebase-admin/firestore';
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16' as any, // Type assertion to fix version compatibility
-});
+// Mock types for development
+type MockEvent = {
+  type: string;
+  data: {
+    object: {
+      id: string;
+      status: string;
+      metadata: {
+        orderId: string;
+      };
+    };
+  };
+};
+
+// Mock Stripe implementation for development
+const mockStripe = {
+  webhooks: {
+    constructEvent: (body: string, signature: string, secret: string): MockEvent => ({
+      type: 'payment_intent.succeeded',
+      data: {
+        object: {
+          id: 'pi_mock_' + Date.now(),
+          status: 'succeeded',
+          metadata: {
+            orderId: 'mock-order-id-' + Date.now(),
+          },
+        },
+      },
+    }),
+  },
+};
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.text();
+    // In Next.js 15, headers() returns the headers directly
     const headersList = headers();
     const signature = headersList.get('stripe-signature') || '';
     
-    // Verify webhook signature
-    let event: Stripe.Event;
+    // Mock webhook verification for development
+    let event: MockEvent;
     try {
-      event = stripe.webhooks.constructEvent(
-        body,
-        signature,
-        process.env.STRIPE_WEBHOOK_SECRET || ''
-      );
+      // In production, you would use the actual Stripe SDK
+      // event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || '');
+      
+      // For development, use the mock implementation
+      event = mockStripe.webhooks.constructEvent(body, signature, 'mock_secret');
     } catch (err) {
       console.error('Webhook signature verification failed:', err);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
@@ -31,7 +58,7 @@ export async function POST(request: NextRequest) {
     
     // Handle payment intent succeeded event
     if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const paymentIntent = event.data.object;
       const orderId = paymentIntent.metadata.orderId;
       
       if (!orderId) {

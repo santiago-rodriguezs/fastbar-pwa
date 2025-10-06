@@ -51,6 +51,7 @@
     "geist": "latest",
     "html5-qrcode": "^2.3.8",
     "input-otp": "1.4.1",
+    "jose": "^6.1.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.454.0",
     "mercadopago": "^2.9.0",
