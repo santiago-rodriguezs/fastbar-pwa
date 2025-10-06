@@ -51,16 +51,16 @@ export default function EventsPage() {
           const mockEvents: Event[] = [
             {
               id: 'demo-event',
-              name: 'Demo Festival',
+              name: 'Fiesta aniversario safari',
               date: new Date('2025-10-31T20:00:00'),
-              location: 'Demo Club',
+              location: 'JET',
               active: true,
             },
             {
               id: 'demo-event-2',
-              name: 'Fiesta de Halloween',
+              name: 'Agustin Giri Savage',
               date: new Date('2025-10-31T22:00:00'),
-              location: 'La Trastienda',
+              location: 'BNN',
               active: true,
             },
           ];
@@ -88,16 +88,16 @@ export default function EventsPage() {
         const mockEvents: Event[] = [
           {
             id: 'demo-event',
-            name: 'Demo Festival',
+            name: 'Fiesta aniversario safari',
             date: new Date('2025-10-31T20:00:00'),
-            location: 'Demo Club',
+            location: 'JET',
             active: true,
           },
           {
             id: 'demo-event-2',
-            name: 'Fiesta de Halloween',
+            name: 'Agustin Giri Savage',
             date: new Date('2025-10-31T22:00:00'),
-            location: 'La Trastienda',
+            location: 'BNN',
             active: true,
           },
         ];

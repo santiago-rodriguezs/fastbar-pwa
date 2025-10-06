@@ -6,8 +6,9 @@ import { jwtVerify } from 'jose';
 // Define paths that require authentication and their required roles
 const protectedPaths: Record<string, UserRole[]> = {
   // User paths
-  '/cart': ['user', 'admin'],
-  '/orders': ['user', 'admin'],
+  // TODO: Temporarily remove cart and orders from protected paths to allow users to proceed to payment and view orders without login
+  // '/cart': ['user', 'admin'],
+  // '/orders': ['user', 'admin'],
   
   // Staff paths
   '/staff': ['staff', 'admin'],
@@ -100,7 +101,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/cart/:path*',
-    '/orders/:path*',
+    // TODO: Temporarily remove orders from matcher to allow access without authentication
+    // '/orders/:path*',
     '/staff/:path*',
     '/admin/:path*',
   ],

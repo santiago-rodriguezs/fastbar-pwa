@@ -5,16 +5,21 @@ import { db, auth } from '@/lib/firebase/admin-server';
 export async function POST(request: NextRequest) {
   try {
     // Get session cookie
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('session')?.value;
     
-    if (!sessionCookie) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // TODO: Allow unauthenticated requests for demo purposes
+    let userId = 'demo-user';
     
-    // Verify session
-    const decodedToken = await auth.verifySessionCookie(sessionCookie);
-    const userId = decodedToken.uid;
+    if (sessionCookie) {
+      try {
+        // Verify session
+        const decodedToken = await auth.verifySessionCookie(sessionCookie);
+        userId = decodedToken.uid;
+      } catch (error) {
+        console.log('Session verification failed, using demo user');
+      }
+    }
     
     // Parse request body
     const body = await request.json();

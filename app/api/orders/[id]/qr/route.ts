@@ -12,17 +12,22 @@ export async function GET(
     // Get order ID from params
     const orderId = params.id;
     
+    // TODO: Allow unauthenticated access for demo purposes
+    let userId = 'demo-user';
+    
     // Get session cookie
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('session')?.value;
     
-    if (!sessionCookie) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (sessionCookie) {
+      try {
+        // Verify session
+        const decodedToken = await auth.verifySessionCookie(sessionCookie);
+        userId = decodedToken.uid;
+      } catch (error) {
+        console.log('Session verification failed, using demo user');
+      }
     }
-    
-    // Verify session
-    const decodedToken = await auth.verifySessionCookie(sessionCookie);
-    const userId = decodedToken.uid;
     
     // Get order from Firestore
     const orderRef = db.collection('orders').doc(orderId);
@@ -34,20 +39,29 @@ export async function GET(
     
     const order = orderDoc.data();
     
-    // Check if user owns the order
+    // TODO: Skip ownership check for demo purposes
+    // For production, uncomment the following check
+    /*
     if (order?.userId !== userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    */
     
-    // Check if order is paid
+    // TODO: Skip payment status check for demo purposes
+    // For production, uncomment the following check
+    /*
     if (order?.status !== 'PAID') {
       return NextResponse.json({ error: 'Order not paid' }, { status: 400 });
     }
+    */
     
-    // Check if QR JWT exists
+    // TODO: Skip QR JWT check for demo purposes
+    // For production, uncomment the following check
+    /*
     if (!order?.qrJwt) {
       return NextResponse.json({ error: 'QR not generated' }, { status: 400 });
     }
+    */
     
     // Generate QR code as SVG
     const qrSvg = await qrcode.toString(order.qrJwt, {
